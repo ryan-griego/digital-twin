@@ -111,29 +111,42 @@ def save_conversation(session_id: str, messages: List[Dict]):
 def call_bedrock(conversation: List[Dict], user_message: str) -> str:
     """Call AWS Bedrock with conversation history"""
 
-    # Build messages in Bedrock format - simplified for Nova models
+    # Build messages in Bedrock format for Nova models
     messages = []
 
-    # For Amazon Nova models, create a single user message with system prompt and user input
-    # This avoids conversation history issues that can cause message format errors
-    full_prompt = f"""{prompt()}
-
-User: {user_message}
-
-Assistant: Provide a helpful response as Ryan's digital twin."""
-
+    # Add system prompt as the first message (Amazon Nova models support this)
     messages.append({
         "role": "user",
-        "content": [{"text": full_prompt}]
+        "content": [{"text": f"System: {prompt()}"}]
+    })
+
+    # Add a simulated assistant acknowledgment to establish the pattern
+    messages.append({
+        "role": "assistant",
+        "content": [{"text": "Understood. I am Ryan's digital twin and will respond helpfully based on the system information provided."}]
+    })
+
+    # Add conversation history (ensure proper alternation)
+    for msg in conversation[-10:]:  # Limit to last 10 messages
+        if msg["role"] in ["user", "assistant"]:
+            messages.append({
+                "role": msg["role"],
+                "content": [{"text": msg["content"]}]
+            })
+
+    # Add current user message
+    messages.append({
+        "role": "user",
+        "content": [{"text": user_message}]
     })
 
     try:
-        # Call Bedrock using the converse API with simplified format
+        # Call Bedrock using the converse API
         response = bedrock_client.converse(
             modelId=BEDROCK_MODEL_ID,
             messages=messages,
             inferenceConfig={
-                "maxTokens": 1000,  # Reduced for Nova Micro
+                "maxTokens": 1500,
                 "temperature": 0.7,
                 "topP": 0.9
             }
