@@ -114,25 +114,36 @@ def call_bedrock(conversation: List[Dict], user_message: str) -> str:
     # Build messages in Bedrock format
     messages = []
 
-    # Add conversation history (limit to last 20 messages to manage context)
-    for msg in conversation[-20:]:
+    # For Amazon Nova models, include system prompt as the first user message
+    # since they may not support the system parameter in the same way
+    system_message = f"System: {prompt()}\n\n{user_message}"
+
+    # Add conversation history (limit to last 10 exchanges, ensure proper alternation)
+    recent_conversation = conversation[-20:]  # Last 20 messages for context
+
+    # Ensure conversation starts with user message (required by Bedrock)
+    if recent_conversation and recent_conversation[0]["role"] == "assistant":
+        # Skip the first assistant message to start with user
+        recent_conversation = recent_conversation[1:]
+
+    # Add conversation history
+    for msg in recent_conversation:
         messages.append({
             "role": msg["role"],
             "content": [{"text": msg["content"]}]
         })
 
-    # Add current user message
+    # Add current user message with system prompt
     messages.append({
         "role": "user",
-        "content": [{"text": user_message}]
+        "content": [{"text": system_message}]
     })
 
     try:
-        # Call Bedrock using the converse API with system parameter
+        # Call Bedrock using the converse API (no system parameter for Nova models)
         response = bedrock_client.converse(
             modelId=BEDROCK_MODEL_ID,
             messages=messages,
-            system=[{"text": prompt()}],  # System prompt as separate parameter
             inferenceConfig={
                 "maxTokens": 2000,
                 "temperature": 0.7,
