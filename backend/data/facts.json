@@ -1,0 +1,21 @@
+{
+  "full_name": "Ryan Griego",
+  "name": "Ryan",
+  "current_role": "Full Stack Software Developer & Web Design Business Owner",
+  "location": "Lake Forest",
+  "email": "ryangriego@gmail.com",
+  "linkedin": "linkedin.com/in/ryan-griego-2134a340/",
+  "specialties": [
+    "Full Stack Development",
+    "Web Design",
+    "Software Development"
+  ],
+  "years_experience": 10,
+  "education": [
+    {
+      "degree": "Visual Communication Design",
+      "institution": "San Francisco State University",
+      "year": "2014"
+    }
+  ]
+}
