@@ -111,41 +111,29 @@ def save_conversation(session_id: str, messages: List[Dict]):
 def call_bedrock(conversation: List[Dict], user_message: str) -> str:
     """Call AWS Bedrock with conversation history"""
 
-    # Build messages in Bedrock format
+    # Build messages in Bedrock format - simplified for Nova models
     messages = []
 
-    # For Amazon Nova models, include system prompt as the first user message
-    # since they may not support the system parameter in the same way
-    system_message = f"System: {prompt()}\n\n{user_message}"
+    # For Amazon Nova models, create a single user message with system prompt and user input
+    # This avoids conversation history issues that can cause message format errors
+    full_prompt = f"""{prompt()}
 
-    # Add conversation history (limit to last 10 exchanges, ensure proper alternation)
-    recent_conversation = conversation[-20:]  # Last 20 messages for context
+User: {user_message}
 
-    # Ensure conversation starts with user message (required by Bedrock)
-    if recent_conversation and recent_conversation[0]["role"] == "assistant":
-        # Skip the first assistant message to start with user
-        recent_conversation = recent_conversation[1:]
+Assistant: Provide a helpful response as Ryan's digital twin."""
 
-    # Add conversation history
-    for msg in recent_conversation:
-        messages.append({
-            "role": msg["role"],
-            "content": [{"text": msg["content"]}]
-        })
-
-    # Add current user message with system prompt
     messages.append({
         "role": "user",
-        "content": [{"text": system_message}]
+        "content": [{"text": full_prompt}]
     })
 
     try:
-        # Call Bedrock using the converse API (no system parameter for Nova models)
+        # Call Bedrock using the converse API with simplified format
         response = bedrock_client.converse(
             modelId=BEDROCK_MODEL_ID,
             messages=messages,
             inferenceConfig={
-                "maxTokens": 2000,
+                "maxTokens": 1000,  # Reduced for Nova Micro
                 "temperature": 0.7,
                 "topP": 0.9
             }
